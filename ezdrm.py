@@ -1,6 +1,8 @@
 import requests
 from typing import Self
 import xmltodict
+import urllib.parse
+import base64
 
 
 class EZDrm:
@@ -12,11 +14,18 @@ class EZDrm:
         self.password = password
 
     def fetch(self) -> Self:
-        r = requests.get(self.url, stream=True)
-        print(r)
-        # if r.status_code != 200:
-        #     print("Error while getting EZDrm keys")
-        #     return None
+        params = {
+            "c": self.contentId,
+            "u": self.user,
+            "p": self.password,
+            "k": self.kid,
+        }
+        r = requests.get(
+            "{url}?{params}".format(
+                url=self.url, params=urllib.parse.urlencode(params)
+            ),
+            stream=True,
+        )
         # decompress if we are receiving GZip
         r.raw.decode_content = True
         self.content_dict = xmltodict.parse(r.raw)
@@ -27,5 +36,19 @@ class EZDrm:
         self.contentId = root["@contentId"]
         self.version = root["@version"]
         contentKey = root["cpix:ContentKeyList"]["cpix:ContentKey"]
-        self.explicitIV = contentKey["@explicitIV"]
+        self.explicitIV = (
+            base64.b64decode(contentKey["@explicitIV"].encode("ascii")).hex().upper()
+        )
+        secret = contentKey["cpix:Data"]["pskc:Secret"]["pskc:PlainValue"]
+        self.secretKey = base64.b64decode(secret.encode("ascii")).hex().upper()
+        self.encryption = contentKey["@commonEncryptionScheme"]
+        self.psshList = [
+            x["cpix:PSSH"]
+            for x in filter(
+                lambda attr: True if "cpix:PSSH" in attr else False,
+                root["cpix:DRMSystemList"]["cpix:DRMSystem"],
+            )
+        ]
         return self
+
+    # def fragmentMP4(f: str):
