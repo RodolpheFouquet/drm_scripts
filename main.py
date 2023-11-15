@@ -2,9 +2,14 @@ from ezdrm import EZDrm
 
 
 def main():
-    url = "https://cpix.ezdrm.com/keygenerator/cpix2.aspx?k=b44f9e30-2fb6-49b4-990f-01f3fc4bfe2d&u=cpix@ezdrm.com&p=s3cur3!!02&c=Mp4box-test01"
-    drm = EZDrm(url).fetch().parseKeys()
-    print(drm.contentId)
+    url = "https://cpix.ezdrm.com/keygenerator/cpix2.aspx"
+    kid = "b44f9e30-2fb6-49b4-990f-01f3fc4bfe2d"
+    user = ""
+    password = ""
+    content = "Mp4box-test01"
+    drm = EZDrm(url, kid, content, user, password).fetch().parseKeys()
+    drm.parseKeys()
+    drm.writeDRMXML()
 
 
 if __name__ == "__main__":
